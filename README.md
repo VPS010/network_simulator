@@ -106,7 +106,11 @@ If a valid path is found between the sender and receiver, the network topology g
 
 3. Submit the form.
 
-![Ring Topology Example](path/to/static\Screenshot 2024-04-05 184257.png)
+![Ring Topology Example](static/Screenshot%202024-04-05%20184257.png)
+
+![Ring plot ](static/Screenshot%202024-04-05%20184437.png)
 
 Message passing path:
+
+![message passing ](static/Screenshot%202024-04-05%20184510.png)
 
