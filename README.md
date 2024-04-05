@@ -108,9 +108,9 @@ If a valid path is found between the sender and receiver, the network topology g
 
 ![Ring Topology Example](static/Screenshot%202024-04-05%20184257.png)
 
-![Ring plot ](static/Screenshot%202024-04-05%20184437.png)
+![Ring plot ](static/Screenshot%202024-04-05%20185716.png)
 
 Message passing path:
 
-![message passing ](static/Screenshot%202024-04-05%20184510.png)
+![message passing ](static/Screenshot%202024-04-05%20185757.png)
 
