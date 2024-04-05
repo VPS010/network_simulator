@@ -106,7 +106,7 @@ If a valid path is found between the sender and receiver, the network topology g
 
 3. Submit the form.
 
-![Star Topology Example](path/to/star_topology.png)
+![Ring Topology Example](path/to/static\Screenshot 2024-04-05 184257.png)
 
 Message passing path:
 
