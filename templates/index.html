@@ -1,72 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Simulation</title>
+    <title>Network Topology Simulator</title>
 </head>
 <body>
-    <h1>Network Simulation</h1>
+    <h1>Network Topology Simulator</h1>
     <form method="POST" action="/">
-        <label for="topology_name">Topology Name:</label>
-        <input type="text" id="topology_name" name="topology_name" required><br><br>
-
         <label for="num_devices">Number of Devices:</label>
         <input type="number" id="num_devices" name="num_devices" required><br><br>
 
-        <label for="topology_choice">Topology Type:</label>
-        <select id="topology_choice" name="topology_choice" onchange="toggleHubOption()" required>
-            <option value="1">Star Topology</option>
-            <option value="2">Point-to-Point Topology</option>
-            <option value="3">Bus Topology</option>
-            <option value="4">Ring Topology</option>
-            <option value="5">Mesh Topology</option>
+        <label for="topology_type">Topology Type:</label>
+        <select id="topology_type" name="topology_type" required>
+            <option value="star">Star</option>
+            <option value="bus">Bus</option>
+            <option value="ring">Ring</option>
+            <option value="mesh">Mesh</option>
         </select><br><br>
 
-        <div id="hub_option">
-            <label for="hub_name">Hub Name:</label>
-            <input type="text" id="hub_name" name="hub_name" required><br><br>
-        </div>
+        <label for="sender_id">Sender Device ID:</label>
+        <input type="text" id="sender_id" name="sender_id" required><br><br>
 
-        <div id="devices">
-            <!-- Device inputs will be dynamically added based on the number of devices -->
-        </div>
+        <label for="receiver_id">Receiver Device ID:</label>
+        <input type="text" id="receiver_id" name="receiver_id" required><br><br>
 
-        <button type="button" onclick="addDevice()">Add Device</button><br><br>
-        <button type="submit">Create</button>
+        <label for="message">Message:</label>
+        <input type="text" id="message" name="message" required><br><br>
+
+        <input type="submit" value="Submit">
     </form>
 
-    <script>
-        function toggleHubOption() {
-            const topologyChoice = document.getElementById('topology_choice').value;
-            const hubOptionDiv = document.getElementById('hub_option');
-
-            if (topologyChoice === '1') {
-                hubOptionDiv.style.display = 'block';
-            } else {
-                hubOptionDiv.style.display = 'none';
-            }
-        }
-
-        function addDevice() {
-            const numDevices = document.getElementById('num_devices').value;
-            const devicesDiv = document.getElementById('devices');
-            devicesDiv.innerHTML = '';  // Clear previous device inputs
-
-            for (let i = 1; i <= numDevices; i++) {
-                const deviceDiv = document.createElement('div');
-                deviceDiv.innerHTML = `
-                    <label for="name${i}">Device ${i} Name:</label>
-                    <input type="text" id="name${i}" name="name${i}" required><br>
-                    <!-- No device type selection for other topologies -->
-                    <input type="hidden" id="type${i}" name="type${i}" value="EndDevice">
-                `;
-                devicesDiv.appendChild(deviceDiv);
-            }
-        }
-
-        // Initially hide the hub option for non-star topologies
-        window.onload = toggleHubOption;
-    </script>
+    {% if plot_available %}
+    <hr>
+    <h2>Network Topology Graph:</h2>
+    <img src="{{ url_for('static', filename='topology.png') }}" alt="Network Topology">
+    <hr>
+    <h2>Message Passing:</h2>
+    {% for step in path %}
+    {% if loop.index != path|length %}
+    <p>{{ step }} -> {{ path[loop.index] }}</p>
+    {% endif %}
+    {% endfor %}
+    <p>Message: {{ message }}</p>
+    {% else %}
+    <p>{{ error_message }}</p>
+    {% endif %}
 </body>
 </html>
