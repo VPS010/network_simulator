@@ -97,12 +97,12 @@ If a valid path is found between the sender and receiver, the network topology g
 
 ### Example Usage:
 
-1. Choose "Star" topology.
+1. Choose "Ring" topology.
 2. Enter the following details:
-   - Number of devices: 4
+   - Number of devices: 5
    - Sender device ID: Device1
-   - Receiver device ID: Device3
-   - Message: Hello, world!
+   - Receiver device ID: Device4
+   - Message: hello dear
 
 3. Submit the form.
 
