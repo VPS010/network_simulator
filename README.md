@@ -67,3 +67,46 @@ The Network Topology Simulator provides the following functionality:
    - Displays error messages if no valid path is found between sender and receiver devices.
 
 The code structure is modular and follows object-oriented programming principles to manage devices, topologies, and simulations efficiently. The Flask framework handles the web interface, while NetworkX and Matplotlib provide powerful tools for network analysis and visualization.
+
+# Hands-on
+
+
+## Step 1: Choose Topology Type
+
+Select the type of network topology you want to create:
+- Star
+- Bus
+- Ring
+- Mesh
+
+## Step 2: Enter Details
+
+Fill in the required details:
+- Number of devices
+- Sender device ID
+- Receiver device ID
+- Message to be sent
+
+## Step 3: Submit Form
+
+Click the "Submit" button to create the network and simulate message passing.
+
+## Results
+
+If a valid path is found between the sender and receiver, the network topology graph and the message passing path will be displayed. If no path is found, an error message will be shown.
+
+### Example Usage:
+
+1. Choose "Star" topology.
+2. Enter the following details:
+   - Number of devices: 4
+   - Sender device ID: Device1
+   - Receiver device ID: Device3
+   - Message: Hello, world!
+
+3. Submit the form.
+
+![Star Topology Example](path/to/star_topology.png)
+
+Message passing path:
+
