@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request
 import matplotlib.pyplot as plt
 import networkx as nx
-import os
+import random
+import string
 
 app = Flask(__name__)
 
@@ -23,6 +24,11 @@ class Device:
     
     def receive_data(self, data):
         print(f"Device {self.device_id} received data: {data}")
+    
+    def generate_mac_address(self):
+        if not hasattr(self, 'mac_address'):
+            self.mac_address = ':'.join(''.join(random.choices(string.hexdigits.lower(), k=2)) for _ in range(6))
+        return self.mac_address
 
 
 class Hub(Device):
@@ -39,23 +45,22 @@ class Hub(Device):
     
     def receive_data(self, data):
         print(f"Hub {self.device_id} received data: {data}")
-        self.broadcast(data)
 
 
-class Switch(Device):  # Switch is also a Device
-    def __init__(self, switch_id):
-        super().__init__(switch_id)
+class Repeater(Device):
+    def __init__(self, repeater_id):
+        super().__init__(repeater_id)
     
-    def connect_to_switch(self, device):
+    def connect_to_repeater(self, device):
         self.connect(device)
 
     def send_data(self, data, receiver_id):
         for device in self.connected_devices:
             if device.device_id == receiver_id:
                 device.receive_data(data)
-                print(f"Switch {self.device_id} forwarded data to {device.device_id}")
+                print(f"Repeater {self.device_id} forwarded data to {device.device_id}")
                 return
-        print(f"Receiver device {receiver_id} not connected to switch {self.device_id}")
+        print(f"Receiver device {receiver_id} not connected to repeater {self.device_id}")
 
 
 class Topology:
@@ -77,38 +82,38 @@ class Topology:
             self.add_device(device)
             self.create_connection(device, hub)
     
-    def create_bus_topology(self, devices, switches):
-        self.add_device(switches[0])  # Connect the first switch to the hub
-        self.create_connection(switches[0], devices[0])
+    def create_bus_topology(self, devices, repeaters):
+        self.add_device(repeaters[0])
+        self.create_connection(repeaters[0], devices[0])
         self.add_device(devices[0])
-        for i in range(1, len(switches)):
-            self.add_device(switches[i])
-            self.create_connection(switches[i], switches[i-1])  # Connect switches in a line
-            self.create_connection(switches[i], devices[i])
+        for i in range(1, len(repeaters)):
+            self.add_device(repeaters[i])
+            self.create_connection(repeaters[i], repeaters[i-1])
+            self.create_connection(repeaters[i], devices[i])
             self.add_device(devices[i])
     
-    def create_ring_topology(self, devices, switches):
-        for device, switch in zip(devices, switches):
-            self.add_device(switch)
+    def create_ring_topology(self, devices, repeaters):
+        for device, repeater in zip(devices, repeaters):
+            self.add_device(repeater)
             self.add_device(device)
-            self.create_connection(device, switch)
-        for i in range(len(switches)):
-            self.create_connection(switches[i], switches[(i + 1) % len(switches)])  # Circular connection
+            self.create_connection(device, repeater)
+        for i in range(len(repeaters)):
+            self.create_connection(repeaters[i], repeaters[(i + 1) % len(repeaters)])
     
-    def create_mesh_topology(self, devices, switches):
-        for device, switch in zip(devices, switches):
-            self.add_device(switch)
+    def create_mesh_topology(self, devices, repeaters):
+        for device, repeater in zip(devices, repeaters):
+            self.add_device(repeater)
             self.add_device(device)
-            self.create_connection(device, switch)
-            for other_switch in switches:
-                if other_switch != switch:
-                    self.create_connection(switch, other_switch)
+            self.create_connection(device, repeater)
+            for other_repeater in repeaters:
+                if other_repeater != repeater:
+                    self.create_connection(repeater, other_repeater)
     
     def plot_topology(self):
-        pos = nx.spring_layout(self.graph)  # Layout for graph visualization
+        pos = nx.spring_layout(self.graph)
         nx.draw(self.graph, pos, with_labels=True, node_size=800, node_color='skyblue', font_size=10, font_weight='bold')
         plt.title('Network Topology')
-        plt.savefig('static/topology.png')  # Save the plot image
+        plt.savefig('static/topology.png')
         plt.close()
 
 
@@ -122,20 +127,20 @@ class Simulation:
             hub = Hub("Hub1")
             self.topology.create_star_topology(devices, hub)
         elif topology_type.lower() == 'bus':
-            num_switches = num_devices
-            switches = [Switch(f"Switch{i+1}") for i in range(num_switches)]
+            num_repeaters = num_devices
+            repeaters = [Repeater(f"Repeater{i+1}") for i in range(num_repeaters)]
             devices = [Device(f"Device{i+1}") for i in range(num_devices)]
-            self.topology.create_bus_topology(devices, switches)
+            self.topology.create_bus_topology(devices, repeaters)
         elif topology_type.lower() == 'ring':
-            num_switches = num_devices
-            switches = [Switch(f"Switch{i+1}") for i in range(num_switches)]
+            num_repeaters = num_devices
+            repeaters = [Repeater(f"Repeater{i+1}") for i in range(num_repeaters)]
             devices = [Device(f"Device{i+1}") for i in range(num_devices)]
-            self.topology.create_ring_topology(devices, switches)
+            self.topology.create_ring_topology(devices, repeaters)
         elif topology_type.lower() == 'mesh':
-            num_switches = num_devices
-            switches = [Switch(f"Switch{i+1}") for i in range(num_switches)]
+            num_repeaters = num_devices
+            repeaters = [Repeater(f"Repeater{i+1}") for i in range(num_repeaters)]
             devices = [Device(f"Device{i+1}") for i in range(num_devices)]
-            self.topology.create_mesh_topology(devices, switches)
+            self.topology.create_mesh_topology(devices, repeaters)
         else:
             print("Invalid topology type.")
     
@@ -156,7 +161,7 @@ class Simulation:
         for i in range(len(path)-1):
             sender = next(device for device in self.topology.devices if device.device_id == path[i])
             receiver = next(device for device in self.topology.devices if device.device_id == path[i+1])
-            if isinstance(sender, Switch):
+            if isinstance(sender, Repeater):
                 sender.send_data(message, receiver_id)
             else:
                 sender.send_data(message)
@@ -168,7 +173,7 @@ class Simulation:
         
         path = self.check_message_path(sender_id, receiver_id)
         if path:
-            self.topology.plot_topology()  # Plot the network graph
+            self.topology.plot_topology()
             self.send_message(path, message, receiver_id)
             return True, path
         else:
@@ -187,7 +192,12 @@ def index():
         simulation = Simulation()
         success, path = simulation.run_simulation(num_devices, topology_type, sender_id, receiver_id, message)
         if success:
-            return render_template('index.html', plot_available=True, path=path, message=message)
+            # Generate MAC addresses
+            mac_addresses = {}
+            for device in simulation.topology.devices:
+                mac_addresses[device.device_id] = device.generate_mac_address()
+
+            return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses)
         else:
             return render_template('index.html', plot_available=False, error_message="No path found between the sender and receiver.")
     return render_template('index.html', plot_available=False)

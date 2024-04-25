@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -36,6 +37,15 @@
         <h2>Network Topology Graph:</h2>
         <img src="{{ url_for('static', filename='topology.png') }}" alt="Network Topology">
         <hr>
+        <h2>MAC Addresses:</h2>
+        <ul>
+          {% for device_id, mac_address in mac_addresses.items() %}
+            {% if not device_id.startswith('Repeater') %}
+              <li>{{ device_id }} - {{ mac_address }}</li>
+              <br>
+            {% endif %}
+          {% endfor %}
+        </ul>
         <h2>Message Passing:</h2>
         <div class="message-passing">
             {% for step in path %}
