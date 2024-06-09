@@ -17,10 +17,13 @@ class Device:
             other_device.connected_devices.append(self)
             print(f"Devices {self.device_id} and {other_device.device_id} connected.")
     
-    def send_data(self, data):
+    def send_data(self, data, source_mac=None, dest_mac=None):
         print(f"Device {self.device_id} sending data: {data}")
         for device in self.connected_devices:
-            device.receive_data(data)
+            if isinstance(device, Switch):
+                device.receive_data(data, source_mac, dest_mac)
+            else:
+                device.receive_data(data)
     
     def receive_data(self, data):
         print(f"Device {self.device_id} received data: {data}")
@@ -29,7 +32,6 @@ class Device:
         if not hasattr(self, 'mac_address'):
             self.mac_address = ':'.join(''.join(random.choices(string.hexdigits.lower(), k=2)) for _ in range(6))
         return self.mac_address
-
 
 class Hub(Device):
     def __init__(self, hub_id):
@@ -41,11 +43,25 @@ class Hub(Device):
     def broadcast(self, data):
         print(f"Hub {self.device_id} broadcasting data: {data}")
         for device in self.connected_devices:
-            device.receive_data(data)
+            if isinstance(device, Switch):
+                device.receive_data(data, self.generate_mac_address(), None)  # broadcast doesn't have specific dest_mac
+            else:
+                device.receive_data(data)
     
     def receive_data(self, data):
         print(f"Hub {self.device_id} received data: {data}")
+        self.broadcast(data)
 
+class Switch(Device):
+    def __init__(self, switch_id):
+        super().__init__(switch_id)
+    
+    def receive_data(self, data, source_mac, dest_mac):
+        print(f"Switch {self.device_id} received data: {data} from {source_mac} to {dest_mac}")
+        for device in self.connected_devices:
+            if device.generate_mac_address() == dest_mac:
+                device.receive_data(data)
+                break
 
 class Repeater(Device):
     def __init__(self, repeater_id):
@@ -61,7 +77,6 @@ class Repeater(Device):
                 print(f"Repeater {self.device_id} forwarded data to {device.device_id}")
                 return
         print(f"Receiver device {receiver_id} not connected to repeater {self.device_id}")
-
 
 class Topology:
     def __init__(self):
@@ -115,7 +130,6 @@ class Topology:
         plt.title('Network Topology')
         plt.savefig('static/topology.png')
         plt.close()
-
 
 class Simulation:
     def __init__(self):
@@ -178,30 +192,65 @@ class Simulation:
             return True, path
         else:
             return False, None
+    
+    def create_network_with_switch(self, num_topologies, devices_per_topology):
+        hubs = []
+        for i in range(num_topologies):
+            devices = [Device(f"Device{i+1}_{j+1}") for j in range(devices_per_topology[i])]
+            hub = Hub(f"Hub{i+1}")
+            hubs.append(hub)
+            self.topology.create_star_topology(devices, hub)
+        
+        switch = Switch("Switch1")
+        for hub in hubs:
+            self.topology.create_connection(switch, hub)
+        self.topology.add_device(switch)
 
+    def run_simulation_with_switch(self, num_topologies, devices_per_topology, sender_id, receiver_id, message):
+        self.create_network_with_switch(num_topologies, devices_per_topology)
+        print("Devices in the network:", [device.device_id for device in self.topology.devices])
+        
+        path = self.check_message_path(sender_id, receiver_id)
+        if path:
+            self.topology.plot_topology()
+            self.send_message(path, message, receiver_id)
+            return True, path
+        else:
+            return False, None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        num_devices = int(request.form['num_devices'])
-        topology_type = request.form['topology_type']
-        sender_id = request.form['sender_id']
-        receiver_id = request.form['receiver_id']
-        message = request.form['message']
-        
-        simulation = Simulation()
-        success, path = simulation.run_simulation(num_devices, topology_type, sender_id, receiver_id, message)
-        if success:
-            # Generate MAC addresses
-            mac_addresses = {}
-            for device in simulation.topology.devices:
-                mac_addresses[device.device_id] = device.generate_mac_address()
-
-            return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses)
+        use_switch = request.form.get('use_switch') == 'yes'
+        if not use_switch:
+            num_devices = int(request.form['num_devices'])
+            topology_type = request.form['topology_type']
+            sender_id = request.form['sender_id']
+            receiver_id = request.form['receiver_id']
+            message = request.form['message']
+            
+            simulation = Simulation()
+            success, path = simulation.run_simulation(num_devices, topology_type, sender_id, receiver_id, message)
+            if success:
+                mac_addresses = {device.device_id: device.generate_mac_address() for device in simulation.topology.devices}
+                return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses)
+            else:
+                return render_template('index.html', plot_available=False, error_message="No path found between the sender and receiver.")
         else:
-            return render_template('index.html', plot_available=False, error_message="No path found between the sender and receiver.")
+            num_topologies = int(request.form['num_topologies'])
+            devices_per_topology = [int(request.form[f'num_devices_topology{i+1}']) for i in range(num_topologies)]
+            sender_id = request.form['sender_id']
+            receiver_id = request.form['receiver_id']
+            message = request.form['message']
+            
+            simulation = Simulation()
+            success, path = simulation.run_simulation_with_switch(num_topologies, devices_per_topology, sender_id, receiver_id, message)
+            if success:
+                mac_addresses = {device.device_id: device.generate_mac_address() for device in simulation.topology.devices}
+                return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses)
+            else:
+                return render_template('index.html', plot_available=False, error_message="No path found between the sender and receiver.")
     return render_template('index.html', plot_available=False)
-
 
 if __name__ == "__main__":
     app.run(debug=True)

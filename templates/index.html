@@ -18,25 +18,27 @@
             flex: 1;
             background-color: #1a1a2e;
             color: white;
-            padding: 20px;
+            padding: 10px;
             box-sizing: border-box;
-            overflow: auto;
+            overflow-y: auto;
         }
         .form-container h1 {
             color: #00aaff;
+            margin-bottom: 10px;
         }
         .form-container label {
             display: block;
-            margin: 10px 0 5px;
+            margin: 5px 0;
         }
         .form-container input[type="number"],
         .form-container input[type="text"],
         .form-container select {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin-bottom: 20px;
+            width: calc(100% - 20px);
+            padding: 8px;
+            margin-bottom: 10px;
             border: none;
             border-radius: 5px;
+            box-sizing: border-box;
         }
         .form-container input[type="submit"] {
             background-color: #00aaff;
@@ -45,6 +47,8 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
         }
         .results-container {
             flex: 2;
@@ -87,25 +91,41 @@
         <div class="form-container">
             <h1>Network Simulator (v2)</h1>
             <form method="POST" action="/">
-                <label for="num_devices">Number of Devices:</label>
-                <input type="number" id="num_devices" name="num_devices" required><br><br>
+                <label for="use_switch">Use Switch?</label>
+                <select id="use_switch" name="use_switch" required>
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                </select>
 
-                <label for="topology_type">Topology Type:</label>
-                <select id="topology_type" name="topology_type" required>
-                    <option value="star">Star</option>
-                    <option value="bus">Bus</option>
-                    <option value="ring">Ring</option>
-                    <option value="mesh">Mesh</option>
-                </select><br><br>
+                <div id="without-switch">
+                    <label for="num_devices">Number of Devices:</label>
+                    <input type="number" id="num_devices" name="num_devices">
+
+                    <label for="topology_type">Topology Type:</label>
+                    <select id="topology_type" name="topology_type">
+                        <option value="star">Star</option>
+                        <option value="bus">Bus</option>
+                        <option value="ring">Ring</option>
+                        <option value="mesh">Mesh</option>
+                    </select>
+                </div>
+
+                <div id="with-switch" style="display: none;">
+                    <label for="num_topologies">Number of Star Topologies:</label>
+                    <input type="number" id="num_topologies" name="num_topologies">
+
+                    <div id="topology-details">
+                    </div>
+                </div>
 
                 <label for="sender_id">Sender Device ID:</label>
-                <input type="text" id="sender_id" name="sender_id" required><br><br>
+                <input type="text" id="sender_id" name="sender_id" required>
 
                 <label for="receiver_id">Receiver Device ID:</label>
-                <input type="text" id="receiver_id" name="receiver_id" required><br><br>
+                <input type="text" id="receiver_id" name="receiver_id" required>
 
                 <label for="message">Message:</label>
-                <input type="text" id="message" name="message" required><br><br>
+                <input type="text" id="message" name="message" required>
 
                 <input type="submit" class="btn" value="Submit">
             </form>
@@ -140,5 +160,30 @@
             {% endif %}
         </div>
     </div>
+    
+    <script>
+        document.getElementById('use_switch').addEventListener('change', function() {
+            if (this.value === 'yes') {
+                document.getElementById('without-switch').style.display = 'none';
+                document.getElementById('with-switch').style.display = 'block';
+            } else {
+                document.getElementById('without-switch').style.display = 'block';
+                document.getElementById('with-switch').style.display = 'none';
+            }
+        });
+
+        document.getElementById('num_topologies').addEventListener('input', function() {
+            let numTopologies = this.value;
+            let topologyDetails = document.getElementById('topology-details');
+            topologyDetails.innerHTML = '';
+
+            for (let i = 0; i < numTopologies; i++) {
+                topologyDetails.innerHTML += `
+                    <label for="num_devices_topology${i+1}">Number of Devices in Star Topology ${i+1}:</label>
+                    <input type="number" id="num_devices_topology${i+1}" name="num_devices_topology${i+1}" required>
+                `;
+            }
+        });
+    </script>
 </body>
 </html>
