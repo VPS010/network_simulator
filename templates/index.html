@@ -84,6 +84,21 @@
         .error-message {
             color: red;
         }
+        .routing-table-container {
+            margin-top: 20px;
+        }
+        .routing-table-container table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .routing-table-container th, .routing-table-container td {
+            border: 1px solid #dddddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .routing-table-container th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -114,8 +129,7 @@
                     <label for="num_topologies">Number of Star Topologies:</label>
                     <input type="number" id="num_topologies" name="num_topologies">
 
-                    <div id="topology-details">
-                    </div>
+                    <div id="topology-details"></div>
                 </div>
 
                 <label for="sender_id">Sender Device ID:</label>
@@ -137,33 +151,57 @@
             <h2>Network Topology Graph:</h2>
             <img src="{{ url_for('static', filename='topology.png') }}" alt="Network Topology">
             <hr>
-            <h2>MAC Addresses:</h2>
+            <h2>Devices IP Addresses and MAC Addresses using ARP:</h2>
             <ul>
-                {% for device_id, mac_address in mac_addresses.items() %}
-                {% if not device_id.startswith('Repeater') %}
-                <li>{{ device_id }} - {{ mac_address }}</li>
-                <br>
-                {% endif %}
+                {% for device_id, ip_address in ip_addresses.items() %}
+                    {% if not device_id.startswith('Repeater') %}
+                        <li>{{ device_id }} - IP: {{ ip_address }} / MAC: {{ mac_addresses[device_id] }}</li>
+                        <br>
+                    {% endif %}
                 {% endfor %}
             </ul>
+            
+            <h2>Broadcast Domains:</h2>
+            <p>{{ broadcast_domains }}</p>
+            
+            <h2>Collision Domains:</h2>
+            <p>{{ collision_domains }}</p>
+            
+            <div class="routing-table-container">
+                <hr>
+                <h2>Routing Table:</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Device ID</th>
+                            <th>Connected Devices</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device_id, connected_devices in routing_tables.items() %}
+                        <tr>
+                            <td>{{ device_id }}</td>
+                            <td>{{ connected_devices|join(', ') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
             <h2>Message Passing:</h2>
             <div class="message-passing">
                 {% for step in path %}
-                {% if loop.index != path|length %}
-                <p>{{ step }} -> {{ path[loop.index] }}</p>
-                {% endif %}
+                    {% if loop.index != path|length %}
+                        {% set sender_mac = mac_addresses[step] if step != 'Hub1' else mac_addresses['Switch1'] %}
+                        {% set receiver_mac = mac_addresses[path[loop.index]] if path[loop.index] != 'Hub2' else mac_addresses['Device2_1'] %}
+                        <p>{{ sender_mac }} ({{ step }}) -> {{ receiver_mac }} ({{ path[loop.index] }})</p>
+                    {% endif %}
                 {% endfor %}
                 <p>Message: {{ message }}</p>
             </div>
-            {% if broadcast_domains is defined and collision_domains is defined %}
-            <hr>
-            <h2>Network Domains:</h2>
-            <ul>
-                <li>Broadcast Domains: {{ broadcast_domains }}</li>
-                <li>Collision Domains: {{ collision_domains }}</li>
-            </ul>
             {% endif %}
-            {% else %}
+            
+            {% if error_message %}
             <p class="error-message">{{ error_message }}</p>
             {% endif %}
         </div>

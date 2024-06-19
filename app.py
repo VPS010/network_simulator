@@ -10,6 +10,9 @@ class Device:
     def __init__(self, device_id):
         self.device_id = device_id
         self.connected_devices = []
+        self.mac_address = None
+        self.ipv4_address = None
+        self.routing_table = {}  # Initialize routing table
 
     def connect(self, other_device):
         if other_device not in self.connected_devices:
@@ -17,17 +20,14 @@ class Device:
             other_device.connected_devices.append(self)
             print(f"Devices {self.device_id} and {other_device.device_id} connected.")
 
-    def send_data(self, data, source_mac=None, dest_mac=None, visited=None):
+    def send_data(self, data, visited=None):
         if visited is None:
             visited = set()
         visited.add(self.device_id)
         print(f"Device {self.device_id} sending data: {data}")
         for device in self.connected_devices:
             if device.device_id not in visited:
-                if isinstance(device, Switch):
-                    device.receive_data(data, source_mac, dest_mac, visited)
-                else:
-                    device.receive_data(data, visited)
+                device.receive_data(data, visited=visited)
 
     def receive_data(self, data, visited=None):
         if visited is None:
@@ -37,25 +37,30 @@ class Device:
         self.send_data(data, visited=visited)
 
     def generate_mac_address(self):
-        if not hasattr(self, 'mac_address'):
+        if not self.mac_address:
             self.mac_address = ':'.join(''.join(random.choices(string.hexdigits.lower(), k=2)) for _ in range(6))
         return self.mac_address
+
+    def assign_ipv4_address(self):
+        if not self.ipv4_address:
+            self.ipv4_address = '.'.join(str(random.randint(0, 255)) for _ in range(4))
+        return self.ipv4_address
+
+    def add_routing_entry(self, destination, next_hop):
+        self.routing_table[destination] = next_hop
 
 class Hub(Device):
     def __init__(self, hub_id):
         super().__init__(hub_id)
 
-    def broadcast(self, data, source_mac=None, dest_mac=None, visited=None):
+    def broadcast(self, data, visited=None):
         if visited is None:
             visited = set()
         visited.add(self.device_id)
         print(f"Hub {self.device_id} broadcasting data: {data}")
         for device in self.connected_devices:
             if device.device_id not in visited:
-                if isinstance(device, Switch):
-                    device.receive_data(data, source_mac, dest_mac, visited)
-                else:
-                    device.receive_data(data, visited)
+                device.receive_data(data, visited=visited)
 
     def receive_data(self, data, visited=None):
         if visited is None:
@@ -69,12 +74,13 @@ class Switch(Device):
         super().__init__(switch_id)
         self.mac_table = {}
 
-    def receive_data(self, data, source_mac, dest_mac, visited=None):
+    def receive_data(self, data, visited=None):
         if visited is None:
             visited = set()
         visited.add(self.device_id)
-        print(f"Switch {self.device_id} received data: {data} from {source_mac} to {dest_mac}")
-        self.mac_table[source_mac] = source_mac
+        print(f"Switch {self.device_id} received data: {data}")
+        self.mac_table[data['source_mac']] = data['source_mac']
+        dest_mac = data['dest_mac']
         if dest_mac in self.mac_table:
             for device in self.connected_devices:
                 if device.generate_mac_address() == dest_mac:
@@ -82,20 +88,20 @@ class Switch(Device):
                     break
         else:
             for device in self.connected_devices:
-                if device.generate_mac_address() != source_mac:
+                if device.generate_mac_address() != data['source_mac']:
                     device.receive_data(data, visited)
 
 class Repeater(Device):
     def __init__(self, repeater_id):
         super().__init__(repeater_id)
 
-    def send_data(self, data, receiver_id):
+    def send_data(self, data, receiver_mac):
         for device in self.connected_devices:
-            if device.device_id == receiver_id:
+            if device.mac_address == receiver_mac:
                 device.receive_data(data)
-                print(f"Repeater {self.device_id} forwarded data to {device.device_id}")
+                print(f"Repeater {self.device_id} forwarded data to {device.mac_address}")
                 return
-        print(f"Receiver device {receiver_id} not connected to repeater {self.device_id}")
+        print(f"Receiver device with MAC address {receiver_mac} not connected to repeater {self.device_id}")
 
 class Topology:
     def __init__(self):
@@ -150,6 +156,28 @@ class Topology:
         plt.savefig('static/topology.png')
         plt.close()
 
+    def assign_ipv4_addresses(self):
+        for device in self.devices:
+            device.assign_ipv4_address()
+
+    def calculate_broadcast_domains(self):
+        broadcast_domains = 1  # Single switch creates one broadcast domain
+        return broadcast_domains
+
+    def calculate_collision_domains(self):
+        return 2+len([device for device in self.devices if isinstance(device, Hub)])
+
+    def generate_routing_tables(self):
+        for device in self.devices:
+            for other_device in self.devices:
+                if device != other_device:
+                    try:
+                        path = nx.shortest_path(self.graph, source=device.device_id, target=other_device.device_id)
+                        next_hop = path[1] if len(path) > 1 else other_device.device_id
+                        device.add_routing_entry(other_device.ipv4_address, next_hop)
+                    except nx.NetworkXNoPath:
+                        pass
+
 class Simulation:
     def __init__(self):
         self.topology = Topology()
@@ -191,16 +219,18 @@ class Simulation:
             return False
 
     def send_message(self, path, message, receiver_id):
-        for i in range(len(path)-1):
+        for i in range(len(path) - 1):
             sender = next(device for device in self.topology.devices if device.device_id == path[i])
-            receiver = next(device for device in self.topology.devices if device.device_id == path[i+1])
+            receiver = next(device for device in self.topology.devices if device.device_id == path[i + 1])
+            sender_mac = sender.generate_mac_address() if not isinstance(sender, Switch) else receiver.mac_address
+            receiver_mac = receiver.generate_mac_address() if not isinstance(receiver, Switch) else sender.mac_address
             if isinstance(sender, Repeater):
-                sender.send_data(message, receiver_id)
+                sender.send_data(message, receiver_mac)
             elif isinstance(sender, Switch):
-                sender.send_data(message, sender.generate_mac_address(), receiver.generate_mac_address())
+                sender.send_data({'source_mac': sender_mac, 'dest_mac': receiver_mac, 'data': message})
             else:
                 sender.send_data(message)
-            print(f"Message sent from {sender.device_id} to {receiver.device_id}")
+            print(f"Message sent from {sender_mac} to {receiver_mac}")
 
     def run_simulation(self, num_devices, topology_type, sender_id, receiver_id, message):
         self.create_network(num_devices, topology_type)
@@ -208,11 +238,16 @@ class Simulation:
 
         path = self.check_message_path(sender_id, receiver_id)
         if path:
+            self.topology.assign_ipv4_addresses()  # Assign IPv4 addresses
             self.topology.plot_topology()
-            self.send_message(path, message, receiver_id)
-            return True, path
+            self.topology.generate_routing_tables()  # Generate routing tables
+
+            broadcast_domains = self.topology.calculate_broadcast_domains()
+            collision_domains = self.topology.calculate_collision_domains()
+
+            return True, path, broadcast_domains, collision_domains
         else:
-            return False, None
+            return False, None, 0, 0
 
     def create_network_with_switch(self, num_topologies, devices_per_topology):
         hubs = []
@@ -223,9 +258,15 @@ class Simulation:
             self.topology.create_star_topology(devices, hub)
 
         switch = Switch("Switch1")
-        self.topology.add_device(switch)
+        router = Device("Router1")  # Create a router device
+        self.topology.add_device(router)  # Add router to the topology
+        self.topology.create_connection(switch, router)  # Connect switch to router
+
         for hub in hubs:
+            self.topology.add_device(switch)
             self.topology.create_connection(hub, switch)
+
+        # Ensure no data is passed through the router
 
     def run_simulation_with_switch(self, num_topologies, devices_per_topology, sender_id, receiver_id, message):
         self.create_network_with_switch(num_topologies, devices_per_topology)
@@ -233,20 +274,13 @@ class Simulation:
 
         path = self.check_message_path(sender_id, receiver_id)
         if path:
+            self.topology.assign_ipv4_addresses()  # Assign IPv4 addresses
             self.topology.plot_topology()
-            self.send_message(path, message, receiver_id)
-            
-            # Calculate broadcast domains
-            broadcast_domains = 1  # Single switch creates one broadcast domain
+            self.topology.generate_routing_tables()  # Generate routing tables
 
-            # Calculate collision domains
-            collision_domains = 0
-            hubs = [device for device in self.topology.devices if isinstance(device, Hub)]
-            switches = [device for device in self.topology.devices if isinstance(device, Switch)]
-            
-            for switch in switches:
-                collision_domains += len(hubs)  # Each hub connected to a switch is a separate collision domain
-            
+            broadcast_domains = self.topology.calculate_broadcast_domains()
+            collision_domains = num_topologies  # Number of star topologies equals collision domains
+
             return True, path, broadcast_domains, collision_domains
         else:
             return False, None, 0, 0
@@ -263,10 +297,12 @@ def index():
             message = request.form['message']
 
             simulation = Simulation()
-            success, path = simulation.run_simulation(num_devices, topology_type, sender_id, receiver_id, message)
+            success, path, broadcast_domains, collision_domains = simulation.run_simulation(num_devices, topology_type, sender_id, receiver_id, message)
             if success:
                 mac_addresses = {device.device_id: device.generate_mac_address() for device in simulation.topology.devices}
-                return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses)
+                ip_addresses = {device.device_id: device.ipv4_address for device in simulation.topology.devices}
+                routing_tables = {device.ipv4_address: device.routing_table for device in simulation.topology.devices}
+                return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses, ip_addresses=ip_addresses, broadcast_domains=broadcast_domains, collision_domains=collision_domains, routing_tables=routing_tables)
             else:
                 return render_template('index.html', plot_available=False, error_message="No path found between the sender and receiver.")
         else:
@@ -280,7 +316,9 @@ def index():
             success, path, broadcast_domains, collision_domains = simulation.run_simulation_with_switch(num_topologies, devices_per_topology, sender_id, receiver_id, message)
             if success:
                 mac_addresses = {device.device_id: device.generate_mac_address() for device in simulation.topology.devices}
-                return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses, broadcast_domains=broadcast_domains, collision_domains=collision_domains)
+                ip_addresses = {device.device_id: device.ipv4_address for device in simulation.topology.devices}
+                routing_tables = {device.ipv4_address: device.routing_table for device in simulation.topology.devices}
+                return render_template('index.html', plot_available=True, path=path, message=message, mac_addresses=mac_addresses, ip_addresses=ip_addresses, broadcast_domains=broadcast_domains, collision_domains=collision_domains, routing_tables=routing_tables)
             else:
                 return render_template('index.html', plot_available=False, error_message="No path found between the sender and receiver.")
     return render_template('index.html', plot_available=False)
