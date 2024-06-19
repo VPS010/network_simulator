@@ -155,6 +155,14 @@
                 {% endfor %}
                 <p>Message: {{ message }}</p>
             </div>
+            {% if broadcast_domains is defined and collision_domains is defined %}
+            <hr>
+            <h2>Network Domains:</h2>
+            <ul>
+                <li>Broadcast Domains: {{ broadcast_domains }}</li>
+                <li>Collision Domains: {{ collision_domains }}</li>
+            </ul>
+            {% endif %}
             {% else %}
             <p class="error-message">{{ error_message }}</p>
             {% endif %}
