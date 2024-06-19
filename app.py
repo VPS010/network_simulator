@@ -165,18 +165,12 @@ class Topology:
         return broadcast_domains
 
     def calculate_collision_domains(self):
-        return 2+len([device for device in self.devices if isinstance(device, Hub)])
+        return len([device for device in self.devices if isinstance(device, Hub)]) + 1
 
     def generate_routing_tables(self):
         for device in self.devices:
-            for other_device in self.devices:
-                if device != other_device:
-                    try:
-                        path = nx.shortest_path(self.graph, source=device.device_id, target=other_device.device_id)
-                        next_hop = path[1] if len(path) > 1 else other_device.device_id
-                        device.add_routing_entry(other_device.ipv4_address, next_hop)
-                    except nx.NetworkXNoPath:
-                        pass
+            for connected_device in device.connected_devices:
+                device.add_routing_entry(connected_device.ipv4_address, connected_device.ipv4_address)
 
 class Simulation:
     def __init__(self):
@@ -266,8 +260,6 @@ class Simulation:
             self.topology.add_device(switch)
             self.topology.create_connection(hub, switch)
 
-        # Ensure no data is passed through the router
-
     def run_simulation_with_switch(self, num_topologies, devices_per_topology, sender_id, receiver_id, message):
         self.create_network_with_switch(num_topologies, devices_per_topology)
         print("Devices in the network with switch:", [device.device_id for device in self.topology.devices])
@@ -279,7 +271,7 @@ class Simulation:
             self.topology.generate_routing_tables()  # Generate routing tables
 
             broadcast_domains = self.topology.calculate_broadcast_domains()
-            collision_domains = num_topologies  # Number of star topologies equals collision domains
+            collision_domains = num_topologies +1  # Number of star topologies equals collision domains
 
             return True, path, broadcast_domains, collision_domains
         else:

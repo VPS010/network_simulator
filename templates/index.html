@@ -151,7 +151,7 @@
             <h2>Network Topology Graph:</h2>
             <img src="{{ url_for('static', filename='topology.png') }}" alt="Network Topology">
             <hr>
-            <h2>Devices IP Addresses and MAC Addresses using ARP:</h2>
+            <h2>Devices IP Addresses and MAC Addresses:</h2>
             <ul>
                 {% for device_id, ip_address in ip_addresses.items() %}
                     {% if not device_id.startswith('Repeater') %}
