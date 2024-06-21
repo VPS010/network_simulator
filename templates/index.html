@@ -190,6 +190,7 @@
             
             <h2>Message Passing:</h2>
             <div class="message-passing">
+                <p>Message Sent: {{ message }}</p>
                 {% for step in path %}
                     {% if loop.index != path|length %}
                         {% set sender_mac = mac_addresses[step] if step != 'Hub1' else mac_addresses['Switch1'] %}
@@ -197,7 +198,7 @@
                         <p>{{ sender_mac }} ({{ step }}) -> {{ receiver_mac }} ({{ path[loop.index] }})</p>
                     {% endif %}
                 {% endfor %}
-                <p>Message: {{ message }}</p>
+                <p>Message Recived: {{ message }}</p>
             </div>
             {% endif %}
             

@@ -165,7 +165,7 @@ class Topology:
         return broadcast_domains
 
     def calculate_collision_domains(self):
-        return len([device for device in self.devices if isinstance(device, Hub)]) + 1
+        return len([device for device in self.devices if isinstance(device, Hub)])
 
     def generate_routing_tables(self):
         for device in self.devices:
@@ -236,7 +236,7 @@ class Simulation:
             self.topology.plot_topology()
             self.topology.generate_routing_tables()  # Generate routing tables
 
-            broadcast_domains = self.topology.calculate_broadcast_domains()
+            broadcast_domains = (self.topology.calculate_broadcast_domains())-1
             collision_domains = self.topology.calculate_collision_domains()
 
             return True, path, broadcast_domains, collision_domains
@@ -317,3 +317,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+    
