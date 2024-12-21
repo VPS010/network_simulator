@@ -1,236 +1,262 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Network Topology Simulator</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-        }
-        .container {
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .form-container {
-            flex: 1;
-            background-color: #1a1a2e;
-            color: white;
-            padding: 10px;
-            box-sizing: border-box;
-            overflow-y: auto;
-        }
-        .form-container h1 {
-            color: #00aaff;
-            margin-bottom: 10px;
-        }
-        .form-container label {
-            display: block;
-            margin: 5px 0;
-        }
-        .form-container input[type="number"],
-        .form-container input[type="text"],
-        .form-container select {
-            width: calc(100% - 20px);
-            padding: 8px;
-            margin-bottom: 10px;
-            border: none;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        .form-container input[type="submit"] {
-            background-color: #00aaff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .results-container {
-            flex: 2;
-            background-color: #ffffff;
-            color: #1a1a2e;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-        }
-        .results-container h2 {
-            color: #00aaff;
-        }
-        .results-container img {
-            max-width: 100%;
-            height: auto;
-        }
-        .results-container ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        .results-container ul li {
-            background-color: #e3f2fd;
-            padding: 10px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-        }
-        .results-container .message-passing p {
-            background-color: #e3f2fd;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 5px;
-        }
-        .error-message {
-            color: red;
-        }
-        .routing-table-container {
-            margin-top: 20px;
-        }
-        .routing-table-container table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .routing-table-container th, .routing-table-container td {
-            border: 1px solid #dddddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .routing-table-container th {
-            background-color: #f2f2f2;
-        }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+      }
+      .container {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+      .form-container {
+        flex: 1;
+        background-color: #1a1a2e;
+        color: white;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .form-container h1 {
+        color: #00aaff;
+        margin-bottom: 10px;
+      }
+      .form-container label {
+        display: block;
+        margin: 5px 0;
+      }
+      .form-container input[type="number"],
+      .form-container input[type="text"],
+      .form-container select {
+        width: calc(100% - 20px);
+        padding: 8px;
+        margin-bottom: 10px;
+        border: none;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+      .form-container input[type="submit"] {
+        background-color: #00aaff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .results-container {
+        flex: 2;
+        background-color: #ffffff;
+        color: #1a1a2e;
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .results-container h2 {
+        color: #00aaff;
+      }
+      .results-container img {
+        max-width: 100%;
+        height: auto;
+      }
+      .results-container ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      .results-container ul li {
+        background-color: #e3f2fd;
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+      }
+      .results-container .message-passing p {
+        background-color: #e3f2fd;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+      }
+      .error-message {
+        color: red;
+      }
+      .routing-table-container {
+        margin-top: 20px;
+      }
+      .routing-table-container table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .routing-table-container th,
+      .routing-table-container td {
+        border: 1px solid #dddddd;
+        padding: 8px;
+        text-align: left;
+      }
+      .routing-table-container th {
+        background-color: #f2f2f2;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="form-container">
-            <h1>Network Simulator (v2)</h1>
-            <form method="POST" action="/">
-                <label for="use_switch">Use Switch?</label>
-                <select id="use_switch" name="use_switch" required>
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                </select>
+      <div class="form-container">
+        <h1>Network Simulator (v2)</h1>
+        <form method="POST" action="/">
+          <label for="use_switch">Use Switch?</label>
+          <select id="use_switch" name="use_switch" required>
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
 
-                <div id="without-switch">
-                    <label for="num_devices">Number of Devices:</label>
-                    <input type="number" id="num_devices" name="num_devices">
+          <div id="without-switch">
+            <label for="num_devices">Number of Devices:</label>
+            <input type="number" id="num_devices" name="num_devices" />
 
-                    <label for="topology_type">Topology Type:</label>
-                    <select id="topology_type" name="topology_type">
-                        <option value="star">Star</option>
-                        <option value="bus">Bus</option>
-                        <option value="ring">Ring</option>
-                        <option value="mesh">Mesh</option>
-                    </select>
-                </div>
+            <label for="topology_type">Topology Type:</label>
+            <select id="topology_type" name="topology_type">
+              <option value="star">Star</option>
+              <option value="bus">Bus</option>
+              <option value="ring">Ring</option>
+              <option value="mesh">Mesh</option>
+            </select>
+          </div>
 
-                <div id="with-switch" style="display: none;">
-                    <label for="num_topologies">Number of Star Topologies:</label>
-                    <input type="number" id="num_topologies" name="num_topologies">
+          <div id="with-switch" style="display: none">
+            <label for="num_topologies">Number of Star Topologies:</label>
+            <input type="number" id="num_topologies" name="num_topologies" />
 
-                    <div id="topology-details"></div>
-                </div>
+            <div id="topology-details"></div>
+          </div>
 
-                <label for="sender_id">Sender Device ID:</label>
-                <input type="text" id="sender_id" name="sender_id" required>
+          <label for="sender_id">Sender Device ID:</label>
+          <input type="text" id="sender_id" name="sender_id" required />
 
-                <label for="receiver_id">Receiver Device ID:</label>
-                <input type="text" id="receiver_id" name="receiver_id" required>
+          <label for="receiver_id">Receiver Device ID:</label>
+          <input type="text" id="receiver_id" name="receiver_id" required />
 
-                <label for="message">Message:</label>
-                <input type="text" id="message" name="message" required>
+          <label for="message">Message:</label>
+          <input type="text" id="message" name="message" required />
 
-                <input type="submit" class="btn" value="Submit">
-            </form>
+          <input type="submit" class="btn" value="Submit" />
+        </form>
+        <p
+          style="    position: relative;
+          margin-top: 50px; /* Pushes the element to the bottom */
+          font-size: 15px;
+          margin-bottom: 0px;
+          text-align: center;
+          color: #00aaff;
+        "
+      >
+      &lt;/&gt; Made by Vinay with ❤️
+        </p>
+      </div>
+
+      <div class="results-container">
+        {% if plot_available %}
+        <hr />
+        <h2>Network Topology Graph:</h2>
+        <img
+          src="{{ url_for('static', filename='topology.png') }}"
+          alt="Network Topology"
+        />
+        <hr />
+        <h2>Devices IP Addresses and MAC Addresses:</h2>
+        <ul>
+          {% for device_id, ip_address in ip_addresses.items() %} {% if not
+          device_id.startswith('Repeater') %}
+          <li>
+            {{ device_id }} - IP: {{ ip_address }} / MAC: {{
+            mac_addresses[device_id] }}
+          </li>
+          <br />
+          {% endif %} {% endfor %}
+        </ul>
+
+        <h2>Broadcast Domains:</h2>
+        <p>{{ broadcast_domains }}</p>
+
+        <h2>Collision Domains:</h2>
+        <p>{{ collision_domains }}</p>
+
+        <div class="routing-table-container">
+          <hr />
+          <h2>Routing Table:</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Device ID</th>
+                <th>Connected Devices</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for device_id, connected_devices in routing_tables.items() %}
+              <tr>
+                <td>{{ device_id }}</td>
+                <td>{{ connected_devices|join(', ') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
 
-        <div class="results-container">
-            {% if plot_available %}
-            <hr>
-            <h2>Network Topology Graph:</h2>
-            <img src="{{ url_for('static', filename='topology.png') }}" alt="Network Topology">
-            <hr>
-            <h2>Devices IP Addresses and MAC Addresses:</h2>
-            <ul>
-                {% for device_id, ip_address in ip_addresses.items() %}
-                    {% if not device_id.startswith('Repeater') %}
-                        <li>{{ device_id }} - IP: {{ ip_address }} / MAC: {{ mac_addresses[device_id] }}</li>
-                        <br>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-            
-            <h2>Broadcast Domains:</h2>
-            <p>{{ broadcast_domains }}</p>
-            
-            <h2>Collision Domains:</h2>
-            <p>{{ collision_domains }}</p>
-            
-            <div class="routing-table-container">
-                <hr>
-                <h2>Routing Table:</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Device ID</th>
-                            <th>Connected Devices</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for device_id, connected_devices in routing_tables.items() %}
-                        <tr>
-                            <td>{{ device_id }}</td>
-                            <td>{{ connected_devices|join(', ') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <h2>Message Passing:</h2>
-            <div class="message-passing">
-                <p>Message Sent: {{ message }}</p>
-                {% for step in path %}
-                    {% if loop.index != path|length %}
-                        {% set sender_mac = mac_addresses[step] if step != 'Hub1' else mac_addresses['Switch1'] %}
-                        {% set receiver_mac = mac_addresses[path[loop.index]] if path[loop.index] != 'Hub2' else mac_addresses['Device2_1'] %}
-                        <p>{{ sender_mac }} ({{ step }}) -> {{ receiver_mac }} ({{ path[loop.index] }})</p>
-                    {% endif %}
-                {% endfor %}
-                <p>Message Recived: {{ message }}</p>
-            </div>
-            {% endif %}
-            
-            {% if error_message %}
-            <p class="error-message">{{ error_message }}</p>
-            {% endif %}
+        <h2>Message Passing:</h2>
+        <div class="message-passing">
+          <p>Message Sent: {{ message }}</p>
+          {% for step in path %} {% if loop.index != path|length %} {% set
+          sender_mac = mac_addresses[step] if step != 'Hub1' else
+          mac_addresses['Switch1'] %} {% set receiver_mac =
+          mac_addresses[path[loop.index]] if path[loop.index] != 'Hub2' else
+          mac_addresses['Device2_1'] %}
+          <p>
+            {{ sender_mac }} ({{ step }}) -> {{ receiver_mac }} ({{
+            path[loop.index] }})
+          </p>
+          {% endif %} {% endfor %}
+          <p>Message Recived: {{ message }}</p>
         </div>
+        {% endif %} {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+      </div>
     </div>
-    
+
     <script>
-        document.getElementById('use_switch').addEventListener('change', function() {
-            if (this.value === 'yes') {
-                document.getElementById('without-switch').style.display = 'none';
-                document.getElementById('with-switch').style.display = 'block';
-            } else {
-                document.getElementById('without-switch').style.display = 'block';
-                document.getElementById('with-switch').style.display = 'none';
-            }
+      document
+        .getElementById("use_switch")
+        .addEventListener("change", function () {
+          if (this.value === "yes") {
+            document.getElementById("without-switch").style.display = "none";
+            document.getElementById("with-switch").style.display = "block";
+          } else {
+            document.getElementById("without-switch").style.display = "block";
+            document.getElementById("with-switch").style.display = "none";
+          }
         });
 
-        document.getElementById('num_topologies').addEventListener('input', function() {
-            let numTopologies = this.value;
-            let topologyDetails = document.getElementById('topology-details');
-            topologyDetails.innerHTML = '';
+      document
+        .getElementById("num_topologies")
+        .addEventListener("input", function () {
+          let numTopologies = this.value;
+          let topologyDetails = document.getElementById("topology-details");
+          topologyDetails.innerHTML = "";
 
-            for (let i = 0; i < numTopologies; i++) {
-                topologyDetails.innerHTML += `
-                    <label for="num_devices_topology${i+1}">Number of Devices in Star Topology ${i+1}:</label>
-                    <input type="number" id="num_devices_topology${i+1}" name="num_devices_topology${i+1}" required>
+          for (let i = 0; i < numTopologies; i++) {
+            topologyDetails.innerHTML += `
+                    <label for="num_devices_topology${
+                      i + 1
+                    }">Number of Devices in Star Topology ${i + 1}:</label>
+                    <input type="number" id="num_devices_topology${
+                      i + 1
+                    }" name="num_devices_topology${i + 1}" required>
                 `;
-            }
+          }
         });
     </script>
-</body>
+  </body>
 </html>
